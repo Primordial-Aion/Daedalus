@@ -126,29 +126,26 @@ public abstract class BaseSimulation implements Simulation {
 }
 ```
 
-### 3.3 SimEntity
+### 3.3 Components (Entity Component System)
 
-`SimEntity` extends `engine.entity.Entity` and adds simulation-specific behavior:
+Instead of extending entities, you attach modular algorithms via the `Component` class:
 
 ```java
-public class SimEntity extends Entity {
-    private float updatePriority = 0;
+public class MyBehaviorComponent extends Component {
+    @Override
+    public void start() {}
 
-    // Constructors
-    public SimEntity(Model model);
-    public SimEntity(Model model, float x, float y, float z);
-    public SimEntity(Model model, Vector3f position);
-
-    // Override this for per-frame behavior
-    public void update(float deltaTime) { }
-
-    // Control update order (lower = earlier)
-    public float getUpdatePriority();
-    public void setUpdatePriority(float priority);
+    @Override
+    public void update(float deltaTime) {
+        // Your logic here
+        Vector3f pos = entity.getPosition();
+        pos.y += 10 * deltaTime;
+        entity.setPosition(pos);
+    }
 }
 ```
 
-**Key:** Your custom entity logic goes inside `update(float deltaTime)`.
+**Key:** Your custom logic goes inside `update(float deltaTime)` inside a Component, which is then attached to an `Entity`.
 
 ### 3.4 Environment
 
@@ -164,9 +161,12 @@ public class Environment {
 
 ### 3.5 Running Simulations
 
-**Option 1: Using SimRunner (Recommended)**
+**Option 1: Using SimRunner Builder (Recommended)**
 ```java
-SimRunner.run(MySimulation.class);
+SimRunner.builder(MySimulation.class)
+         .withTitle("My Demo")
+         .withResolution(1280, 720)
+         .start();
 ```
 
 **Option 2: Manual Control**
@@ -205,26 +205,24 @@ mvn clean package
 
 ## 5. Step-by-Step Usage Guide
 
-### Step 1: Create Your Custom Entity Class
+### Step 1: Create Your Custom Component
 
 This is where your simulation logic lives (hunger, thirst, AI, etc.):
 
 ```java
 package my.sim;
 
-import sim.entity.SimEntity;
-import engine.model.Model;
+import engine.entity.Component;
 import org.joml.Vector3f;
 
-public class MyCreature extends SimEntity {
+public class CreatureAIComponent extends Component {
     // Your simulation state
     private float hunger = 100.0f;
     private float thirst = 100.0f;
     private Vector3f velocity = new Vector3f(0, 0, 0);
 
-    public MyCreature(Model model, float x, float y, float z) {
-        super(model, x, y, z);
-    }
+    @Override
+    public void start() {}
 
     @Override
     public void update(float deltaTime) {
@@ -237,9 +235,9 @@ public class MyCreature extends SimEntity {
         }
 
         // Apply velocity to position
-        Vector3f pos = getPosition();
+        Vector3f pos = entity.getPosition();
         pos.add(velocity.x * deltaTime, 0, velocity.z * deltaTime);
-        setPosition(pos);
+        entity.setPosition(pos);
     }
 }
 ```
@@ -251,9 +249,9 @@ package my.sim;
 
 import sim.api.BaseSimulation;
 import sim.core.SimRunner;
-import sim.entity.SimEntity;
+import engine.entity.Entity;
+import engine.util.AssetManager;
 import engine.model.Model;
-import engine.model.ModelLoader;
 import engine.terrain.Terrain;
 import org.joml.Vector3f;
 
@@ -271,25 +269,23 @@ public class MySimulation extends BaseSimulation {
 
         // --- LOAD TERRAIN ---
         Terrain terrain = Terrain.get();
-        terrain.generateFlatTerrain();  // or generateNoiseTerrain(seed)
+        terrain.generateFlatTerrain();
         environment.setTerrain(terrain);
 
         // --- LOAD MODELS ---
-        Model creatureModel = ModelLoader.loadObjModel("/assets/models/creature.obj");
-        Model foodModel = ModelLoader.loadObjModel("/assets/models/food.obj");
+        Model creatureModel = AssetManager.loadModel("assets/models/creature.obj");
 
         // --- SPAWN INITIAL ENTITIES ---
         for (int i = 0; i < 20; i++) {
             float x = (float)(Math.random() * 40 - 20);
             float z = (float)(Math.random() * 40 - 20);
-            float y = terrain.getHeightAt(x, z);  // Snap to terrain
+            float y = terrain.getHeightAt(x, z);
 
-            MyCreature creature = new MyCreature(creatureModel, x, y, z);
-            addEntity(creature);  // Adds to scene automatically
+            Entity creature = new Entity(creatureModel);
+            creature.setPosition(new Vector3f(x, y, z));
+            creature.addComponent(new CreatureAIComponent());
+            addEntity(creature);
         }
-
-        // Spawn initial food sources
-        spawnFood(foodModel, terrain);
     }
 
     @Override
@@ -323,7 +319,10 @@ public class MySimulation extends BaseSimulation {
 
     // --- ENTRY POINT ---
     public static void main(String[] args) {
-        SimRunner.run(MySimulation.class);
+        SimRunner.builder(MySimulation.class)
+            .withTitle("My Simulation")
+            .withResolution(1280, 720)
+            .start();
     }
 }
 ```
