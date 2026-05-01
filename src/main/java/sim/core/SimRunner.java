@@ -1,14 +1,47 @@
 package sim.core;
 
 import sim.api.Simulation;
+import engine.util.Config;
 
 public class SimRunner {
     private final SimulationEngine engine;
     private final Class<? extends Simulation> simulationClass;
 
-    public SimRunner(Class<? extends Simulation> simulationClass) {
+    private SimRunner(Class<? extends Simulation> simulationClass) {
         this.simulationClass = simulationClass;
         this.engine = new SimulationEngine();
+    }
+
+    public static SimRunnerBuilder builder(Class<? extends Simulation> simulationClass) {
+        return new SimRunnerBuilder(simulationClass);
+    }
+
+    public static class SimRunnerBuilder {
+        private final Class<? extends Simulation> simulationClass;
+        
+        public SimRunnerBuilder(Class<? extends Simulation> simulationClass) {
+            this.simulationClass = simulationClass;
+        }
+
+        public SimRunnerBuilder withTitle(String title) {
+            Config.get().windowTitle = title;
+            return this;
+        }
+
+        public SimRunnerBuilder withResolution(int width, int height) {
+            Config.get().windowWidth = width;
+            Config.get().windowHeight = height;
+            return this;
+        }
+
+        public SimRunnerBuilder withVsync(boolean vsync) {
+            Config.get().enableVsync = vsync;
+            return this;
+        }
+
+        public void start() {
+            new SimRunner(simulationClass).start();
+        }
     }
 
     public void start() {
@@ -22,6 +55,6 @@ public class SimRunner {
     }
 
     public static void run(Class<? extends Simulation> simulationClass) {
-        new SimRunner(simulationClass).start();
+        builder(simulationClass).start();
     }
 }

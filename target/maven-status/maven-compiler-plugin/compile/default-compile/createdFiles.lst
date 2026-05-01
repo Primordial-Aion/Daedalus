@@ -1,6 +1,7 @@
 sim/api/BaseSimulation.class
 sim/core/SimulationEngine.class
 sim/entity/SimEntity.class
+sim/core/SimRunner$SimRunnerBuilder.class
 sim/api/Simulation.class
 sim/env/Environment.class
 sim/core/SimRunner.class

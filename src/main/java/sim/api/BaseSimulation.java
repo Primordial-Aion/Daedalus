@@ -37,11 +37,11 @@ public abstract class BaseSimulation implements Simulation {
 
     protected abstract void onCleanup();
 
-    protected void addEntity(SimEntity entity) {
+    protected void addEntity(engine.entity.Entity entity) {
         scene.addEntity(entity);
     }
 
-    protected void removeEntity(SimEntity entity) {
+    protected void removeEntity(engine.entity.Entity entity) {
         scene.removeEntity(entity);
     }
 }
